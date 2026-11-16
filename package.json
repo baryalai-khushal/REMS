@@ -6,21 +6,34 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "db:migrate": "node --conditions=react-server --import tsx scripts/migrate.ts",
+    "db:check": "node --conditions=react-server --import tsx scripts/db-inspect.ts",
+    "period:init": "node --conditions=react-server --import tsx scripts/init-period.ts",
+    "admin:create": "node --conditions=react-server --import tsx scripts/create-admin.ts",
+    "sessions:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-sessions.ts",
+    "test": "node --conditions=react-server --import tsx --test tests/auth.test.ts tests/allocation-engine.test.ts tests/balances.test.ts tests/settlements.test.ts tests/departures.test.ts"
   },
   "dependencies": {
+    "@next/env": "^16.4.6",
+    "jalaali-js": "1.2.8",
+    "mysql2": "^3.24.6",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
+    "@types/jalaali-js": "^1.2.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
