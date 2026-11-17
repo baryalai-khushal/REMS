@@ -13,10 +13,11 @@
     "period:init": "node --conditions=react-server --import tsx scripts/init-period.ts",
     "admin:create": "node --conditions=react-server --import tsx scripts/create-admin.ts",
     "sessions:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-sessions.ts",
-    "test": "node --conditions=react-server --import tsx --test tests/auth.test.ts tests/allocation-engine.test.ts tests/balances.test.ts tests/settlements.test.ts tests/departures.test.ts"
+    "test": "node --conditions=react-server --import tsx --test tests/auth.test.ts tests/allocation-engine.test.ts tests/balances.test.ts tests/settlement-engine.test.ts tests/settlements.test.ts tests/departures.test.ts tests/report-word.test.ts tests/reports.test.ts"
   },
   "dependencies": {
     "@next/env": "^16.4.6",
+    "docx": "9.15.4",
     "jalaali-js": "1.2.8",
     "mysql2": "^3.24.6",
     "next": "16.4.6",
@@ -30,8 +31,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "docx-preview": "0.4.1",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "fflate": "0.8.3",
+    "playwright": "1.65.1",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
     "typescript": "^5"

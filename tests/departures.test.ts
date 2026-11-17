@@ -155,6 +155,7 @@ test("milestone 5: inclusive departures, one room fund, account revocation and l
     assert.deepEqual(view.monthEndReview.participants.map((p: { allocatedShare: string }) => p.allocatedShare), ["1500.00", "1750.00", "1750.00", "1750.00", "1750.00"]);
     const balance = await allocations();
     const allocation = balance.allocations.find((a: { expenseId: number }) => a.expenseId === later.expense.id);
+    assert.ok(allocation);
     assert.deepEqual(allocation.shares.map((s: { minor: string }) => s.minor), ["25000", "25000", "25000", "25000"]);
     const [rows] = await sql.query("SELECT * FROM rems_finalized_shares WHERE expense_id IN (SELECT id FROM rems_expenses WHERE period_key = 140601) ORDER BY expense_id, user_id"); assert.equal(JSON.stringify(rows), frozenBefore);
     assert.equal((await review(2, "1406-01-19")).status, 409);
@@ -231,6 +232,16 @@ test("milestone 5: inclusive departures, one room fund, account revocation and l
     assert.equal((await success(await review())).deactivated, true);
   });
 
+  await t.test("monthly reports include actual departure payouts once and preserve the settled personal balance", async () => {
+    const response = await request(`/api/admin/reports?year=1406&month=1&scope=person&userId=${ids[1]}`, cookies[0]);
+    const value = await success(response), report = value.report;
+    assert.equal(report.subject.deactivated, true); assert.equal(report.subject.leavesOn, "1406-01-20");
+    assert.equal(report.personal.spending, "2000.00"); assert.equal(report.personal.allocatedShare, "1500.00");
+    assert.equal(report.personal.payouts, "500.00"); assert.equal(report.personal.outstanding, "0.00");
+    assert.equal(report.history.length, 2); assert.equal(new Set(report.history.map((entry: { id: number }) => entry.id)).size, 2);
+    assert.equal((await request(`/api/admin/reports/word?year=1406&month=1&scope=person&userId=${ids[1]}&snapshot=${report.snapshot}`, cookies[0])).status, 200);
+  });
+
   await t.test("second departing debtor, partial collection, persistent retry and later three-way allocations", async () => {
     let next = await success(await review(2, "1406-01-22")); assert.equal(next.person.initialBalance, "-750.00");
     await success(await pay(2, "collection", "300"));
@@ -244,7 +255,8 @@ test("milestone 5: inclusive departures, one room fund, account revocation and l
     assert.equal((await room()).totals.cash, "1250.00");
     const later = await success(await expense(4, "900", "1406-01-23"), 201);
     const balances = await allocations();
-    assert.deepEqual(balances.allocations.find((a: { expenseId: number }) => a.expenseId === later.expense.id).shares.map((s: { minor: string }) => s.minor), ["30000", "30000", "30000"]);
+    const allocated = balances.allocations.find((a) => a.expenseId === later.expense.id); assert.ok(allocated);
+    assert.deepEqual(allocated.shares.map((s) => s.minor), ["30000", "30000", "30000"]);
     const view = await room(); assert.deepEqual(view.monthEndReview.participants.slice(0, 2).map((p: { outstanding: string }) => p.outstanding), ["0.00", "0.00"]);
     assert.deepEqual(view.monthEndReview.participants.map((p: { allocatedShare: string }) => p.allocatedShare), ["1500.00", "1750.00", "2050.00", "2050.00", "2050.00"]);
     assert.equal((await expense(3, "1", "1406-01-22")).status, 409);
@@ -258,6 +270,8 @@ test("milestone 5: inclusive departures, one room fund, account revocation and l
     await success(await pay(3, "collection", "550")); await success(await pay(4, "payout", "850")); await success(await pay(5, "payout", "950"));
     const settled = await room(); assert.equal(settled.totals.cash, "0.00"); assert.ok(settled.participants.every((p: { outstanding: string }) => p.outstanding === "0.00"));
     await success(await close()); await success(await close()); assert.equal((await pay(3, "collection", "1")).status, 409);
+    const historical = (await success(await request(`/api/admin/reports?year=1406&month=1&scope=person&userId=${ids[1]}`, cookies[0]))).report;
+    assert.equal(historical.status, "closed"); assert.equal(historical.personal.payouts, "500.00"); assert.equal(historical.personal.outstanding, "0.00"); assert.equal(historical.history.length, 2);
     const old = key; key = followingPeriod(key);
     const roster = await success(await request(`/api/admin/participation?${month()}`, cookies[0])); assert.deepEqual(roster.candidates.map((p: { id: number }) => p.id), ids.slice(3));
     const body = new URLSearchParams({ period: String(key), acknowledge: "confirm", revision: roster.revision }); ids.slice(3).forEach((id) => body.append("participantId", String(id)));
@@ -265,5 +279,20 @@ test("milestone 5: inclusive departures, one room fund, account revocation and l
     key = old;
     const [rows] = await sql.query("SELECT * FROM rems_finalized_shares WHERE expense_id IN (SELECT id FROM rems_expenses WHERE period_key = 140601 AND expense_date <= '1406-01-20') ORDER BY expense_id, user_id"); assert.equal(JSON.stringify(rows), frozenBefore);
     assert.equal((await request("/admin/departures", cookies[0])).status, 200);
+  });
+
+  await t.test("same-day departures share one reviewed cutoff and zero balances need no invented payments", async () => {
+    key = followingPeriod(key);
+    for (const person of [3, 4]) {
+      const value = await success(await review(person, "1406-02-20"));
+      assert.equal(value.person.outstanding, "0.00");
+      await success(await depart(finalize(value))); await success(await depart(deactivate(person)));
+    }
+    assert.equal(await scalar("SELECT COUNT(*) AS value FROM rems_allocation_freezes WHERE period_key = ?", [key]), 1);
+    assert.equal(await scalar("SELECT COUNT(*) AS value FROM rems_cutoff_balances WHERE freeze_id IN (SELECT id FROM rems_allocation_freezes WHERE period_key = ?)", [key]), 3);
+    assert.equal((await room()).history.length, 0);
+    await success(await expense(5, "1.00", "1406-02-21"), 201);
+    const result = await allocations(); assert.deepEqual(result.allocations[0].shares, [{ userId: ids[5], minor: "100" }]);
+    assert.equal(await scalar("SELECT COUNT(*) AS value FROM rems_users"), 6); // Historical accounts remain.
   });
 });

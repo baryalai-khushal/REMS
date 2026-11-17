@@ -14,8 +14,8 @@ export function DepartureSelector({ candidates, selected = "", date }: {
     }}><option value="">Select a roommate</option>{candidates.map((c) => <option key={c.id} value={c.id} disabled={c.role === "admin"}>{c.username}{c.role === "admin" ? " (sole admin)" : !c.active ? " (deactivated)" : ""}</option>)}</select></label>
     <fieldset><legend>Inclusive leaving date · Hijri Shamsi</legend><div className="date-fields">
       <label>Day<select value={Number(day)} onChange={(e) => setDay(e.target.value)}>{Array.from({ length: monthDays(Number(year), Number(month)) }, (_, i) => <option key={i} value={i + 1}>{i + 1}</option>)}</select></label>
-      <label>Month<select value={Number(month)} onChange={(e) => setMonth(e.target.value)}>{MONTHS.map((name, i) => <option key={name} value={i + 1}>{name}</option>)}</select></label>
-      <label>Year<input type="number" min="1" max="3177" value={year} onChange={(e) => setYear(e.target.value)} required /></label>
+      <label>Month<select value={Number(month)} onChange={(e) => { setMonth(e.target.value); setDay(String(Math.min(Number(day), monthDays(Number(year), Number(e.target.value))))); }}>{MONTHS.map((name, i) => <option key={name} value={i + 1}>{name}</option>)}</select></label>
+      <label>Year<input type="number" min="1" max="3177" value={year} onChange={(e) => { setYear(e.target.value); setDay(String(Math.min(Number(day), monthDays(Number(e.target.value), Number(month))))); }} required /></label>
     </div></fieldset>
     <input type="hidden" name="leavesOn" value={`${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`} />
     <button disabled={pending}>{pending ? "Reviewing…" : "Review departure"}</button>

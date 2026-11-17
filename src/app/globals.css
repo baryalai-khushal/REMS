@@ -139,3 +139,51 @@ tfoot td, tfoot th { font-weight: 600; border-top: 2px solid #b8c7bf; }
 .ledger-entry h3, .settlement-person h3 { font-size: 1rem; font-weight: 600; margin-bottom: 10px; }
 .ledger-entry summary { cursor: pointer; color: #823a28; font-weight: 600; }
 .ledger-entry details { max-width: 600px; }
+
+/* A continuous A4-width document on screen; the print engine handles real pages. */
+.report-controls { padding: 24px; margin-bottom: 28px; border: 1px solid #dce4df; background: #fff; }
+.report-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 22px; }
+.report-actions p { width: 100%; font-size: .8rem; color: #62746c; margin: 0; }
+.report-document { width: 210mm; max-width: 100%; min-height: 297mm; padding: 18mm; margin: 0 auto; background: white; color: #24372e; box-shadow: 0 2px 18px #193f3212; font-size: 10pt; line-height: 1.4; }
+.report-masthead { border-bottom: 2px solid #355c49; padding-bottom: 14px; margin-bottom: 18px; }
+.report-masthead p { margin-bottom: 5px; }
+.report-brand { font-size: 22pt; font-weight: 700; letter-spacing: .1em; }
+.report-masthead h2 { font-size: 20pt; letter-spacing: -.025em; margin: 18px 0 8px; }
+.report-period { font-size: 12pt; font-weight: 600; }
+.report-status { font-weight: 600; }
+.report-notes { font-size: 9pt; color: #53665c; }
+.report-notes p { margin-bottom: 9px; }
+.report-section { margin-top: 22px; }
+.report-section h3 { font-size: 12pt; font-weight: 600; margin: 0 0 9px; break-after: avoid; }
+.report-table-wrap { width: 100%; }
+.report-document table { width: 100%; table-layout: fixed; font-size: 9pt; }
+.report-document th, .report-document td { padding: 7px 5px; border-bottom: 1px solid #dfe5e1; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-document th { background: #eff3f0; color: #24372e; font-size: 8pt; font-weight: 600; }
+.report-document .report-amount { text-align: right; font-variant-numeric: tabular-nums; }
+.report-document .report-empty { padding: 16px 5px; color: #62746c; }
+.report-footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #cbd5cf; display: grid; gap: 5px; font-size: 8pt; color: #62746c; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .report-document { padding: 20px 14px; min-height: 0; }
+  .report-controls { padding: 18px; }
+  .report-table-wrap { overflow-x: auto; }
+  .report-document table { min-width: 620px; }
+  .report-masthead h2 { font-size: 18pt; }
+}
+@page {
+  size: A4 portrait; margin: 18mm;
+  @bottom-left { content: "REMS · Room Expense Management System"; font: 8pt Arial; color: #62746c; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt Arial; color: #62746c; }
+}
+@media print {
+  html, body, .app-shell { display: block; background: white; min-height: 0; height: auto; }
+  .app-header, .app-footer, .skip-link, .report-controls, .report-page-heading, .report-footer { display: none !important; }
+  .content { display: block; width: auto; max-width: none; padding: 0; margin: 0; }
+  .report-document { width: auto; max-width: none; min-height: 0; padding: 0; margin: 0; box-shadow: none; }
+  .report-document table { min-width: 0; }
+  .report-table-wrap { overflow: visible; }
+  .report-document thead { display: table-header-group; }
+  .report-document tr { break-inside: avoid; page-break-inside: avoid; }
+  .report-section h3 { break-after: avoid; page-break-after: avoid; }
+  .report-document p { orphans: 3; widows: 3; }
+  .report-masthead { break-inside: avoid; }
+}
